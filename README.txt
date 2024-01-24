@@ -1,5 +1,6 @@
 ########################################################################################
-Code accompanying manuscript ...
+Code accompanying manuscript "Precision Franck-Condon spectroscopy from highly-excited 
+vibrational states" (https://doi.org/10.48550/arXiv.2401.10384)
 
 The code 'single_mode.py' with:
 
