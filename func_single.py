@@ -1,5 +1,7 @@
 import numpy as np
 import math as ma
+from scipy.constants import hbar, m_u, c
+from scipy.special import eval_genlaguerre, gamma, gammaln
 
 def FC_out(S, m, farray):
     #The function FC_out computes <m|m+f>' where |>' is displaced from |> with
@@ -202,3 +204,136 @@ def Ddarray(S, N, fnum, farray, n, beta, mu, Omega, eta0):
 
    return(meanDd,stdDd)
 
+def morse_potential(r, D_e, a, r_e):
+    # Morse potential
+    eV_to_J = 1.60218e-19
+    return D_e * eV_to_J * (1 - np.exp(-a * (r - r_e)))**2
+
+def morse_energy(n, Lambda, w_e_rad):
+    if isinstance(n, np.ndarray) == True:
+       E = np.zeros(n.shape,dtype=float)
+       #print(n)
+       for i in range(n.size):
+          if n[i]>=0 and n[i]<=ma.floor(Lambda-0.5):
+             E[i] = ((n[i] + 1/2) - 1 / (2 * Lambda) * (n[i] + 1/2)**2)* hbar * w_e_rad
+             #print(n[i],E[i])
+          else:
+             E[i] = 0
+    else:
+       if n>=0 and n<=ma.floor(Lambda-0.5):
+          E = ((n + 1/2) - 1 / (2 * Lambda) * (n + 1/2)**2) * hbar * w_e_rad
+       else:
+          E = 0
+    return E
+
+def find_classical_turning_point(r, D_e, a, r_e, Ei):
+    pot = morse_potential(r, D_e, a, r_e)
+  
+    xmin = 0
+    xmax = 0 
+    for j in range(r.size-1):
+       if pot[j]>Ei and pot[j+1]<=Ei:
+          xmin = r[j+1]
+
+       if pot[j]<=Ei and pot[j+1]>Ei:
+          xmax = r[j]
+
+       if j == r.size-2 and xmin == 0:
+          xmin = r[0]
+       if j == r.size-2 and xmax == 0:
+          xmax = r[j+1]
+    
+    return (xmin,xmax)
+
+def morse_wavefunction(n, r, Lambda, a, r_e):
+    # Function to calculate Morse wavefunctions
+
+    if n>=0 and n<=ma.floor(Lambda-0.5):
+       z = 2 * Lambda * np.exp(-a * (r - r_e))
+       #N_n = np.sqrt(ma.factorial(n) * (2 * Lambda - 2 * n - 1)*a  / gamma(2 * Lambda - n))
+       #wavefunc = N_n * z**(Lambda - n - 0.5) * np.exp(-0.5 * z) * eval_genlaguerre(n, 2 * Lambda - 2 * n - 1, z)
+       N_n = np.sqrt(ma.factorial(n) * (2 * Lambda - 2 * n - 1)*a)
+       log_wavefunc = (Lambda - n - 0.5) * np.log(z) - 0.5 * z-0.5*gammaln(2 * Lambda - n)
+       wavefunc = N_n*np.exp(log_wavefunc)*eval_genlaguerre(n, 2 * Lambda - 2 * n - 1, z)
+    else:
+       wavefunc = np.zeros_like(r)
+    return wavefunc
+
+def overlap(f1,f2,dr):
+    return sum(np.multiply(f1, f2))*dr
+
+def FC_Morse(deltad, m, farray, r, Lambda, a, r_e):
+    #The function FC_Morse computes <m|m+f>' where |>' is displaced from |> by deltad and they are eigenstates
+    #of the Morse potential
+
+    dr = r[1]-r[0]
+    FC = np.zeros_like(farray,dtype=float)
+
+    wavefuncm = morse_wavefunction(m, r, Lambda, a, r_e)
+
+    for i in range(farray.size):
+       f = farray[i]
+       if m + f <0:
+          FC[i] = 0
+       else:
+          wavefunci = morse_wavefunction(m + farray[i], r, Lambda, a, r_e + deltad)
+          FC[i] = overlap(wavefuncm,wavefunci,dr)
+
+    return FC
+
+def AFromProbDistMorse(dist, omegaArr, mu, hOmega):
+   # Obtain the absorption cross section from the probability distribution
+
+   omega = hOmega+omegaArr
+
+   A = mu**2*np.multiply(dist,omega)
+
+   return(A)
+
+def ProbDistFromAMorse(A, omegaArr, mu, hOmega):
+   # Obtains the probability distribution from the absorption cross-section and normalizes it
+
+   omega = hOmega+omegaArr
+   P = np.divide(A,omega)/(mu**2)
+
+   Ptot = np.sum(P)
+   P = P/Ptot
+
+   return(P)
+
+def DeltadFromProbDistVar(dist, omegaArr, n, D_e, w_e_rad, a, S):
+   # Obtain Delta d from the probability distribution dist using the variance
+  
+   eV_to_J = 1.60218e-19 
+   meanEarr = np.sum(np.multiply(dist,omegaArr))
+   varEarr = np.sum(np.multiply(dist,np.square(omegaArr)))
+
+   u = n+0.5
+   fS = 2*u/S+(-6*np.square(u)+2.5)/S**2+(4*np.power(u,3)-5*u)/S**3
+   Deltad = np.sqrt((varEarr-np.square(meanEarr))/fS)/(2*a*(D_e*eV_to_J/(hbar*w_e_rad)))
+
+   return(Deltad)
+
+def DdMorse(deltad, m, farray, r, Lambda, a, r_e, w_e_rad, S, D_e, n, mu, hOmega, eta0):
+
+   Ddvals = np.zeros(n)
+
+   Em = morse_energy(m, Lambda, w_e_rad)/(hbar*w_e_rad)
+   Earray = morse_energy(m+farray, Lambda, w_e_rad)/(hbar*w_e_rad)
+   FC = FC_Morse(deltad, m, farray, r, Lambda, a, r_e)
+   dist = np.square(FC)
+   A0 = AFromProbDistMorse(dist, Earray-Em, mu, hOmega)
+
+#   Ddvals[0] = DeltadFromProbDistVar(dist, Earray-Em, m, D_e, w_e_rad, a, S)                  # Obtain the Delta d from the variance for this realization of noise
+#   print(Ddvals[0])
+   for ni in range(n):
+      eta = mu**2*hOmega*noise(farray, eta0)                            # Generate noise
+      Anoisy = A0 + eta                                                 # Add noise to absorption cross section
+      Atrunc = TruncateA(Anoisy, farray, eta0, mu, hOmega)              # Truncate noisy absorption cross section to the relevant region
+      distnew = ProbDistFromAMorse(Atrunc, Earray-Em, mu, hOmega)       # Obtain the probability distribution from the truncated absorption cross section
+      Ddvals[ni] = DeltadFromProbDistVar(distnew, Earray-Em, m, D_e, w_e_rad, a, S)                  # Obtain the Delta d from the variance for this realization of noise
+
+   meanDd = np.mean(Ddvals)
+   stdDd = np.std(Ddvals)
+
+   return(meanDd,stdDd)

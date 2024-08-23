@@ -30,7 +30,7 @@ fock = np.square(FC)
 FC = FC_out(S, 0, farray)
 fock0 = np.square(FC)
 
-################ Sanity check ##################
+################ check ##################
 
 #meantherm = np.sum(np.multiply(therm,farray))
 #meanfock = np.sum(np.multiply(fock,farray))

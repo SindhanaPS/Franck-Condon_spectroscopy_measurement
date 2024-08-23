@@ -6,7 +6,7 @@ from matplotlib import rc
 from matplotlib import rcParams
 from sklearn.linear_model import LinearRegression
 
-flag1 = 3
+flag1 = 5
 flag2 = 2
 Omega = 20.0
 
@@ -15,6 +15,8 @@ Omega = 20.0
 ##### flag1 = 1  & flag2 = 0,1,2     process data for Figure 2
 ##### flag1 = 2                      plot Figure 2
 ##### flag1 = 3                      plot Figure S1
+##### flag1 = 4                      plot Figure S2
+##### flag1 = 5                      plot Figure S3
 ###############################################################
 
 #####################################################
@@ -75,26 +77,50 @@ if flag1 == 3:
    meanDdcoh = data[:,7]
    stdDdcoh = data[:,8]
 
+if flag1 == 4:
+   dataCaH = np.loadtxt('CaH_M2-M12.txt')
+   dataCaHapprox = np.loadtxt('CaH_M2-M12_approx.txt')
+   dataSrF = np.loadtxt('SrF_M2-M12.txt')
+   dataSrFapprox = np.loadtxt('SrF_M2-M12_approx.txt')
+
+   nCaH = dataCaH[:,0]
+   M2M1CaH = dataCaH[:,1]
+   nCaHline = dataCaHapprox[:,0]
+   gnCaH = dataCaHapprox[:,1]
+   nSrF = dataSrF[:,0]
+   M2M1SrF = dataSrF[:,1]
+   nSrFline = dataSrFapprox[:,0]
+   gnSrF = dataSrFapprox[:,1]
+
+if flag1 == 5:
+
+   dataCaH = np.loadtxt('CaH.txt')
+   dataSrF = np.loadtxt('SrF.txt')
+
+   nCaH = dataCaH[:,0]
+   nSrF = dataSrF[:,0]
+
+   percCaH = dataCaH[:,3]
+   percSrF = dataSrF[:,3]
+
 ####################################################
 
 ######################################################
 #                 Formatting                         #
 ######################################################
-
-font = {'family' : 'Helvetica',
-        'weight' : 'normal',
-        'size'   : 16}
-
+font = {'family': 'Helvetica',
+        'weight': 'normal',
+        'size': 18}
 rc('font', **font)
 
-rcParams['text.latex.preamble'] = [
-       r'\usepackage{physics}',
-       r'\usepackage{amsmath}',
-]
+# Enable LaTeX and set up the preamble
+rcParams['text.usetex'] = True
+rcParams['text.latex.preamble'] = r'\usepackage{physics} \usepackage{amsmath}'
 
+# Set the linewidth for axes
 rcParams['axes.linewidth'] = 1
 
-
+# Alternatively, you can use plt.rc for consistency
 plt.rc('text', usetex=True)
 ######################################################
 
@@ -236,4 +262,44 @@ if flag1 == 3:
 
    plt.show()
 
+elif flag1 == 4:
+   fig1, ax1 = plt.subplots(1)
 
+   ax1.scatter(nCaH,M2M1CaH,label='exact')
+   ax1.plot(nCaHline,gnCaH,label=r'$(\Delta d^*)^2g(n)$')
+   ax1.set_ylabel(r'$(M_2-M_1^2)/\omega_a^2$', fontsize=20)
+   ax1.set_xlabel(r'$n$', fontsize=20)
+   ax1.legend(loc='upper left', fontsize=16)
+   fig1.savefig('figS2a.pdf',bbox_inches='tight')
+   plt.show()
+
+   fig1, ax1 = plt.subplots(1)
+
+   ax1.scatter(nSrF,M2M1SrF,label='exact')
+   ax1.plot(nSrFline,gnSrF,label=r'$(\Delta d^*)^2g(n)$')
+   ax1.set_ylabel(r'$(M_2-M_1^2)/\omega_a^2$', fontsize=20)
+   ax1.set_xlabel(r'$n$', fontsize=20)
+   ax1.legend(loc='upper left', fontsize=16)
+   fig1.savefig('figS2b.pdf',bbox_inches='tight')
+   plt.show()
+
+elif flag1 == 5:
+   fig1, ax1 = plt.subplots(1)
+
+   ax1.plot(nCaH,percCaH, color='lightgrey', linestyle='dashed',zorder=1)
+   ax1.scatter(nCaH,percCaH, label='CaH',color='tab:red',zorder=2)
+   ax1.set_ylabel(r'Error $|\frac{\Delta d_{\mathrm{measured}}-\Delta d}{\Delta d}|\times 100\%$', fontsize=18)
+   ax1.set_xlabel(r'$n$', fontsize=18)
+   ax1.legend(loc='upper right', fontsize=16)
+   fig1.savefig('figS3a.pdf',bbox_inches='tight')
+   plt.show()
+
+   fig1, ax1 = plt.subplots(1)
+
+   ax1.plot(nSrF,percSrF, color='lightgrey', linestyle='dashed',zorder=1)
+   ax1.scatter(nSrF,percSrF, label='SrF', color='tab:red',zorder=2)
+   ax1.set_ylabel(r'Error $|\frac{\Delta d_{\mathrm{measured}}-\Delta d}{\Delta d}|\times 100\%$', fontsize=18)
+   ax1.set_xlabel(r'$n$', fontsize=18)
+   ax1.legend(loc='upper right', fontsize=16)
+   fig1.savefig('figS3b.pdf',bbox_inches='tight')
+   plt.show()
