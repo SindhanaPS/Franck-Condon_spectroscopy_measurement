@@ -6,7 +6,7 @@ from matplotlib import rc
 from matplotlib import rcParams
 from sklearn.linear_model import LinearRegression
 
-flag1 = 5
+flag1 = 4
 flag2 = 2
 Omega = 20.0
 
@@ -270,6 +270,7 @@ elif flag1 == 4:
    ax1.set_ylabel(r'$(M_2-M_1^2)/\omega_a^2$', fontsize=20)
    ax1.set_xlabel(r'$n$', fontsize=20)
    ax1.legend(loc='upper left', fontsize=16)
+   ax1.set_title("CaH", fontsize=20)
    fig1.savefig('figS2a.pdf',bbox_inches='tight')
    plt.show()
 
@@ -279,6 +280,7 @@ elif flag1 == 4:
    ax1.plot(nSrFline,gnSrF,label=r'$(\Delta d^*)^2g(n)$')
    ax1.set_ylabel(r'$(M_2-M_1^2)/\omega_a^2$', fontsize=20)
    ax1.set_xlabel(r'$n$', fontsize=20)
+   ax1.set_title("SrF", fontsize=20)
    ax1.legend(loc='upper left', fontsize=16)
    fig1.savefig('figS2b.pdf',bbox_inches='tight')
    plt.show()
